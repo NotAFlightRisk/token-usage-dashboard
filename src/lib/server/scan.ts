@@ -27,11 +27,12 @@ async function listFiles(source: Source): Promise<string[]> {
 
 const INSERT =
   'insert into events (id, tool, model, session, project, ts, day, dow, hour, input, output,' +
-  ' cache_read, cache_write, reasoning, subagent)' +
-  ' values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)' +
+  ' cache_read, cache_write, cache_write_long, reasoning, subagent)' +
+  ' values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)' +
   ' on conflict(id) do update set input = max(input, excluded.input),' +
   ' output = max(output, excluded.output), cache_read = max(cache_read, excluded.cache_read),' +
   ' cache_write = max(cache_write, excluded.cache_write),' +
+  ' cache_write_long = max(cache_write_long, excluded.cache_write_long),' +
   ' reasoning = max(reasoning, excluded.reasoning),' +
   ' subagent = coalesce(excluded.subagent, subagent)';
 
@@ -120,6 +121,7 @@ async function scanSource(source: Source): Promise<SourceStat> {
           event.output,
           event.cache_read,
           event.cache_write,
+          event.cache_write_long ?? 0,
           event.reasoning,
           event.subagent === undefined ? null : Number(event.subagent)
         );

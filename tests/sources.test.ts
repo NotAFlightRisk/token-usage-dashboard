@@ -57,6 +57,18 @@ describe('the Claude Code reader', () => {
     ]);
   });
 
+  it('keeps the hour-long part of a cache write apart, since it bills higher', () => {
+    const text = claudeLine('msg_6', {
+      cache_creation_input_tokens: 300,
+      cache_creation: { ephemeral_5m_input_tokens: 100, ephemeral_1h_input_tokens: 200 }
+    });
+
+    expect(claudeCode.parse('/x.jsonl', text).events[0]).toMatchObject({
+      cache_write: 300,
+      cache_write_long: 200
+    });
+  });
+
   it('skips synthetic models and anything without usage', () => {
     const text = [
       JSON.stringify({ type: 'user', message: { content: 'hello' } }),

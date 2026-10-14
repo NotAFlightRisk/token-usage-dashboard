@@ -72,10 +72,11 @@ describe('usage', () => {
     expect(result.totals.sessions).toBe(4);
   });
 
-  it('gives up on a cost total the moment one model has no price', () => {
-    expect(usage(filters()).totals.cost).toBeNull();
-    expect(usage(filters({ tools: ['claude-code'] })).totals.cost).toBe(15);
-    expect(usage(filters()).unpriced).toEqual(['a-model-nobody-priced']);
+  it('adds up what it can price and names the model it cannot', () => {
+    const result = usage(filters());
+    expect(result.totals.cost).toBe(25);
+    expect(result.byModel.find((slice) => slice.key === 'a-model-nobody-priced')?.cost).toBeNull();
+    expect(result.unpriced).toEqual(['a-model-nobody-priced']);
   });
 
   it('narrows by every filter at once', () => {
@@ -124,6 +125,20 @@ describe('usage', () => {
     expect(session).toMatchObject({ name: 'maintain', peak: 950, turns: 2, total: 1500 });
     expect(session.cacheHit).toBeCloseTo(800 / 1350);
     expect(session.subagents).toBeCloseTo(500 / 1500);
+  });
+
+  it('prices the hour-long cache writes it stored at their own rate', () => {
+    const at = new Date(now - DAY);
+    handle
+      .prepare(
+        'insert into events (id, tool, model, session, project, ts, day, dow, hour, input,' +
+          ' output, cache_read, cache_write, cache_write_long, reasoning)' +
+          " values ('long', 'claude-code', 'claude-opus-5', 'long', '/work/cache', ?, ?, ?, ?," +
+          ' 0, 0, 0, 1000000, 1000000, 0)'
+      )
+      .run(at.getTime(), localDay(at), at.getDay(), at.getHours());
+
+    expect(usage(filters({ projects: ['/work/cache'] })).totals.cost).toBe(10);
   });
 
   it('leaves the subagent share blank for a tool that never says', () => {

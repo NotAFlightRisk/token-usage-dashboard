@@ -7,11 +7,18 @@
     totals,
     previous,
     activeDays,
-    rangeLabel
-  }: { totals: Slice; previous: Slice; activeDays: number; rangeLabel: string } = $props();
+    rangeLabel,
+    unpriced
+  }: {
+    totals: Slice;
+    previous: Slice;
+    activeDays: number;
+    rangeLabel: string;
+    unpriced: string[];
+  } = $props();
 
   const change = $derived(delta(totals.total, previous.total));
-  const costChange = $derived(delta(totals.cost ?? 0, previous.cost ?? 0));
+  const costChange = $derived(unpriced.length ? null : delta(totals.cost ?? 0, previous.cost ?? 0));
 
   const perDay = $derived(activeDays ? totals.total / activeDays : 0);
 
@@ -36,6 +43,14 @@
       <dd class="num">
         {money(totals.cost)}
         {#if costChange}<i class="delta cost {costChange.tone}">{costChange.text}</i>{/if}
+        {#if unpriced.length}
+          <i
+            class="delta"
+            use:tooltip={`Leaves out ${unpriced.join(', ')} - no price yet. Add one in Settings.`}
+          >
+            {unpriced.length} unpriced<span class="visually-hidden">: {unpriced.join(', ')}</span>
+          </i>
+        {/if}
       </dd>
     </div>
     <div>

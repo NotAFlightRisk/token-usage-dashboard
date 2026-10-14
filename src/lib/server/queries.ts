@@ -7,7 +7,24 @@ import { priceOverrides } from './settings';
 
 type Row = Record<string, string | number | null>;
 
-const empty = (): Tokens => ({ input: 0, output: 0, cache_read: 0, cache_write: 0 });
+const empty = (): Tokens => ({
+  input: 0,
+  output: 0,
+  cache_read: 0,
+  cache_write: 0,
+  cache_write_long: 0
+});
+
+const tokensOf = (row: Row): Tokens => ({
+  input: Number(row.input) || 0,
+  output: Number(row.output) || 0,
+  cache_read: Number(row.cache_read) || 0,
+  cache_write: Number(row.cache_write) || 0,
+  cache_write_long: Number(row.cache_write_long) || 0
+});
+
+/** Adds what can be priced, so one unpriced model doesn't blank out the whole total */
+const plus = (sum: number | null, cost: number | null) => (cost === null ? sum : (sum ?? 0) + cost);
 
 function where(filters: Filters, dated = true) {
   const clauses: string[] = [];
@@ -31,7 +48,8 @@ function where(filters: Filters, dated = true) {
 
 const SUMS =
   'sum(input) input, sum(output) output, sum(cache_read) cache_read,' +
-  ' sum(cache_write) cache_write, sum(reasoning) reasoning, count(*) events,' +
+  ' sum(cache_write) cache_write, sum(cache_write_long) cache_write_long,' +
+  ' sum(reasoning) reasoning, count(*) events,' +
   " count(distinct tool || ':' || session) sessions";
 
 /** Rows arrive split by model so each slice can be priced at its own rate. */
@@ -43,17 +61,12 @@ function fold(rows: Row[], overrides: Record<string, Rate>): Map<string, Slice> 
     const key = String(row.key ?? '');
     let slice = slices.get(key);
     if (!slice) {
-      slice = { key, tokens: empty(), total: 0, reasoning: 0, cost: 0, events: 0, sessions: 0 };
+      slice = { key, tokens: empty(), total: 0, reasoning: 0, cost: null, events: 0, sessions: 0 };
       slices.set(key, slice);
       sessions.set(key, new Set());
     }
 
-    const tokens: Tokens = {
-      input: Number(row.input) || 0,
-      output: Number(row.output) || 0,
-      cache_read: Number(row.cache_read) || 0,
-      cache_write: Number(row.cache_write) || 0
-    };
+    const tokens = tokensOf(row);
     for (const field of Object.keys(tokens) as (keyof Tokens)[])
       slice.tokens[field] += tokens[field];
     slice.total += totalOf(tokens);
@@ -61,9 +74,7 @@ function fold(rows: Row[], overrides: Record<string, Rate>): Map<string, Slice> 
     slice.events += Number(row.events) || 0;
     slice.sessions += Number(row.sessions) || 0;
 
-    const cost = costOf(String(row.model ?? ''), tokens, overrides);
-    if (cost === null) slice.cost = null;
-    else if (slice.cost !== null) slice.cost += cost;
+    slice.cost = plus(slice.cost, costOf(String(row.model ?? ''), tokens, overrides));
   }
   return slices;
 }
@@ -118,18 +129,11 @@ function series(filters: Filters, column: string, overrides: Record<string, Rate
       day: String(row.day),
       key: String(row.key ?? ''),
       total: 0,
-      cost: 0
+      cost: null
     };
-    const tokens: Tokens = {
-      input: Number(row.input) || 0,
-      output: Number(row.output) || 0,
-      cache_read: Number(row.cache_read) || 0,
-      cache_write: Number(row.cache_write) || 0
-    };
+    const tokens = tokensOf(row);
     point.total += totalOf(tokens);
-    const cost = costOf(String(row.model ?? ''), tokens, overrides);
-    if (cost === null) point.cost = null;
-    else if (point.cost !== null) point.cost += cost;
+    point.cost = plus(point.cost, costOf(String(row.model ?? ''), tokens, overrides));
     points.set(id, point);
   }
   return [...points.values()];
@@ -150,18 +154,11 @@ function calendar(filters: Filters, overrides: Record<string, Rate>) {
   >();
   for (const row of rows) {
     const day = String(row.day);
-    const entry = days.get(day) ?? { day, total: 0, cost: 0, events: 0 };
-    const tokens: Tokens = {
-      input: Number(row.input) || 0,
-      output: Number(row.output) || 0,
-      cache_read: Number(row.cache_read) || 0,
-      cache_write: Number(row.cache_write) || 0
-    };
+    const entry = days.get(day) ?? { day, total: 0, cost: null, events: 0 };
+    const tokens = tokensOf(row);
     entry.total += totalOf(tokens);
     entry.events += Number(row.events) || 0;
-    const cost = costOf(String(row.model ?? ''), tokens, overrides);
-    if (cost === null) entry.cost = null;
-    else if (entry.cost !== null) entry.cost += cost;
+    entry.cost = plus(entry.cost, costOf(String(row.model ?? ''), tokens, overrides));
     days.set(day, entry);
   }
   return [...days.values()];
@@ -213,19 +210,14 @@ function sessions(filters: Filters, overrides: Record<string, Rate>, limit = 60)
       started: Number(row.started),
       ended: Number(row.ended),
       total: 0,
-      cost: 0,
+      cost: null,
       peak: 0,
       turns: 0,
       read: 0,
       fed: 0,
       side: null
     };
-    const tokens: Tokens = {
-      input: Number(row.input) || 0,
-      output: Number(row.output) || 0,
-      cache_read: Number(row.cache_read) || 0,
-      cache_write: Number(row.cache_write) || 0
-    };
+    const tokens = tokensOf(row);
     entry.models.add(String(row.model));
     entry.started = Math.min(entry.started, Number(row.started));
     entry.ended = Math.max(entry.ended, Number(row.ended));
@@ -235,9 +227,7 @@ function sessions(filters: Filters, overrides: Record<string, Rate>, limit = 60)
     entry.read += tokens.cache_read;
     entry.fed += tokens.input + tokens.cache_read + tokens.cache_write;
     if (Number(row.flagged)) entry.side = (entry.side ?? 0) + (Number(row.side) || 0);
-    const cost = costOf(String(row.model), tokens, overrides);
-    if (cost === null) entry.cost = null;
-    else if (entry.cost !== null) entry.cost += cost;
+    entry.cost = plus(entry.cost, costOf(String(row.model), tokens, overrides));
     merged.set(at, entry);
   }
 

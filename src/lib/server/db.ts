@@ -23,6 +23,7 @@ create table if not exists events (
   output integer not null default 0,
   cache_read integer not null default 0,
   cache_write integer not null default 0,
+  cache_write_long integer not null default 0,
   reasoning integer not null default 0,
   subagent integer
 );
@@ -71,16 +72,25 @@ export function db(): DatabaseSync {
     writeMeta('schema', String(SCHEMA));
   }
   handle.exec(TABLES);
-  addSubagent(handle);
+  addColumns(handle);
   rebucket(handle);
   return handle;
 }
 
-/** Older databases grow the column in place, then every file is read again to fill it in */
-function addSubagent(handle: DatabaseSync): void {
+const ADDED: Record<string, string> = {
+  subagent: 'integer',
+  cache_write_long: 'integer not null default 0'
+};
+
+/** Older databases grow columns in place, then every file is read again to fill them in */
+function addColumns(handle: DatabaseSync): void {
   const columns = handle.prepare('pragma table_info(events)').all() as { name: string }[];
-  if (columns.some((column) => column.name === 'subagent')) return;
-  handle.exec('alter table events add column subagent integer; delete from files');
+  const missing = Object.keys(ADDED).filter(
+    (name) => !columns.some((column) => column.name === name)
+  );
+  if (!missing.length) return;
+  const alters = missing.map((name) => `alter table events add column ${name} ${ADDED[name]};`);
+  handle.exec(`begin; ${alters.join(' ')} delete from files; commit;`);
 }
 
 const REBUCKET = `

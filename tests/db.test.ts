@@ -7,7 +7,7 @@ import { expect, it } from 'vitest';
 const path = join(mkdtempSync(join(tmpdir(), 'aiusage-')), 'usage.db');
 process.env.AIUSAGE_DB = path;
 
-it('adds the subagent column in place, keeping history and reading every file again', async () => {
+it('adds new columns in place, keeping history and reading every file again', async () => {
   const old = new DatabaseSync(path);
   old.exec(`
     create table meta (key text primary key, value text not null);
@@ -25,7 +25,9 @@ it('adds the subagent column in place, keeping history and reading every file ag
   const handle = (await import('../src/lib/server/db')).db();
   const columns = handle.prepare('pragma table_info(events)').all() as { name: string }[];
 
-  expect(columns.map((column) => column.name)).toContain('subagent');
+  expect(columns.map((column) => column.name)).toEqual(
+    expect.arrayContaining(['subagent', 'cache_write_long'])
+  );
   expect(handle.prepare('select count(*) n from events').get()).toEqual({ n: 1 });
   expect(handle.prepare('select count(*) n from files').get()).toEqual({ n: 0 });
 });

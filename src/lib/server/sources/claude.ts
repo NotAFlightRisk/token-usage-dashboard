@@ -28,6 +28,7 @@ export const claudeCode: Source = {
       if (Number.isNaN(ts)) continue;
 
       const details = usage.output_tokens_details as Record<string, number> | undefined;
+      const written = usage.cache_creation as Record<string, number> | undefined;
       events.push({
         id: `claude-code:${message.id}`,
         model: message.model,
@@ -38,6 +39,7 @@ export const claudeCode: Source = {
         output: num(usage.output_tokens),
         cache_read: num(usage.cache_read_input_tokens),
         cache_write: num(usage.cache_creation_input_tokens),
+        cache_write_long: num(written?.ephemeral_1h_input_tokens),
         reasoning: num(details?.thinking_tokens),
         subagent: line.isSidechain === true
       });

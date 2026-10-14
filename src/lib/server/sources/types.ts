@@ -8,6 +8,7 @@ export type Event = {
   output: number;
   cache_read: number;
   cache_write: number;
+  cache_write_long?: number;
   reasoning: number;
   subagent?: boolean;
 };

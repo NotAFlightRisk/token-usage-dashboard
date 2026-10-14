@@ -29,7 +29,7 @@
     projectName,
     relative
   } from '#lib/format.js';
-  import { providerFor, providerMeta, toolMeta } from '#lib/providers.js';
+  import { modelColours, providerFor, providerMeta, toolMeta } from '#lib/providers.js';
   import type { Usage } from '#lib/types.js';
   import type { PageData } from './$types';
 
@@ -120,7 +120,8 @@
   const measure = (slice: { total: number; cost: number | null }) =>
     metric === 'cost' ? (slice.cost ?? 0) : slice.total;
 
-  const show = (value: number) => (metric === 'cost' ? money(value) : compact(value));
+  const show = (slice: { total: number; cost: number | null }) =>
+    metric === 'cost' ? money(slice.cost) : compact(slice.total);
 
   const activeDays = $derived(
     new Set(usage.series.filter((point) => point.total > 0).map((point) => point.day)).size
@@ -134,11 +135,13 @@
     }))
   );
 
+  const colours = $derived(modelColours(usage.byModel.map((slice) => slice.key)));
+
   const modelKeys = $derived(
     usage.byModel.map((slice) => ({
       id: slice.key,
       label: modelName(slice.key),
-      colour: providerMeta(providerFor(slice.key)).colour
+      colour: colours[slice.key]
     }))
   );
 
@@ -152,8 +155,8 @@
         label: modelName(slice.key),
         detail: provider.label,
         value: measure(slice),
-        display: show(measure(slice)),
-        colour: provider.colour,
+        display: show(slice),
+        colour: colours[slice.key],
         mark: provider.id,
         hint: `${slice.key} - ${full(slice.total)} tokens over ${full(slice.events)} requests, ${money(slice.cost)} estimated`
       };
@@ -166,7 +169,7 @@
       label: projectName(slice.key),
       detail: '',
       value: projectBy === 'sessions' ? slice.sessions : measure(slice),
-      display: projectBy === 'sessions' ? full(slice.sessions) : show(measure(slice)),
+      display: projectBy === 'sessions' ? full(slice.sessions) : show(slice),
       colour: 'var(--accent)',
       hint: `${slice.key || 'unknown'} - ${full(slice.total)} tokens, ${full(slice.sessions)} sessions`
     }))
@@ -182,7 +185,7 @@
         label: tool.label,
         detail: slice ? `${full(slice.sessions)} sessions` : 'not found',
         value: slice ? measure(slice) : 0,
-        display: slice ? show(measure(slice)) : '--',
+        display: slice ? show(slice) : '--',
         colour: tool.colour,
         mark: source.id,
         hint: source.present
@@ -346,6 +349,7 @@
     previous={usage.previous}
     {activeDays}
     rangeLabel={rangeLabel(usage.filters.range)}
+    unpriced={usage.unpriced}
   />
 
   <div class="grid">
@@ -416,7 +420,7 @@
               colour: row.colour,
               display: row.display
             }))}
-            centre={show(measure(usage.totals))}
+            centre={show(usage.totals)}
             caption={metric === 'cost' ? 'estimated' : 'tokens'}
           />
           <ul class="key">

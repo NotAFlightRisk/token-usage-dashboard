@@ -38,6 +38,25 @@ export function providerFor(model: string): string {
 export const providerMeta = (id: string) =>
   PROVIDERS.find((provider) => provider.id === id) ?? PROVIDERS[PROVIDERS.length - 1];
 
+const shade = (colour: string, index: number) => {
+  if (!index) return colour;
+  const mix = index % 2 ? 'black' : 'white';
+  return `color-mix(in oklch, ${colour}, ${mix} ${Math.min(Math.ceil(index / 2) * 18, 72)}%)`;
+};
+
+/** Each model after a provider's first goes alternately darker and lighter, so siblings differ */
+export function modelColours(models: string[]): Record<string, string> {
+  const seen = new Map<string, number>();
+  return Object.fromEntries(
+    models.map((model) => {
+      const provider = providerFor(model);
+      const index = seen.get(provider) ?? 0;
+      seen.set(provider, index + 1);
+      return [model, shade(providerMeta(provider).colour, index)];
+    })
+  );
+}
+
 export type Tool = {
   id: string;
   label: string;

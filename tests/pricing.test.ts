@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { costOf, rateFor } from '../src/lib/pricing';
 import { providerFor } from '../src/lib/providers';
 
-const tokens = { input: 1_000_000, output: 0, cache_read: 0, cache_write: 0 };
+const tokens = { input: 1_000_000, output: 0, cache_read: 0, cache_write: 0, cache_write_long: 0 };
 
 describe('pricing', () => {
   it('prices a dated snapshot like the family it belongs to', () => {
@@ -34,6 +34,11 @@ describe('pricing', () => {
 
     expect(read).toBeCloseTo(plain * 0.1);
     expect(write).toBeCloseTo(plain * 1.25);
+  });
+
+  it('charges an hour in the cache at twice the input price', () => {
+    const write = { ...tokens, input: 0, cache_write: 1_000_000, cache_write_long: 600_000 };
+    expect(costOf('claude-opus-5', write)).toBeCloseTo(0.4 * 5 * 1.25 + 0.6 * 5 * 2);
   });
 });
 

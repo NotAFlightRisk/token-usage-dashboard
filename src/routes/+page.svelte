@@ -123,6 +123,8 @@
   const show = (slice: { total: number; cost: number | null }) =>
     metric === 'cost' ? money(slice.cost) : compact(slice.total);
 
+  const biggestFirst = (a: { value: number }, b: { value: number }) => b.value - a.value;
+
   const activeDays = $derived(
     new Set(usage.series.filter((point) => point.total > 0).map((point) => point.day)).size
   );
@@ -148,31 +150,35 @@
   const trendKeys = $derived(trendBy === 'tool' ? toolKeys : modelKeys);
 
   const modelRows = $derived(
-    usage.byModel.map((slice) => {
-      const provider = providerMeta(providerFor(slice.key));
-      return {
-        id: slice.key,
-        label: modelName(slice.key),
-        detail: provider.label,
-        value: measure(slice),
-        display: show(slice),
-        colour: colours[slice.key],
-        mark: provider.id,
-        hint: `${slice.key} - ${full(slice.total)} tokens over ${full(slice.events)} requests, ${money(slice.cost)} estimated`
-      };
-    })
+    usage.byModel
+      .map((slice) => {
+        const provider = providerMeta(providerFor(slice.key));
+        return {
+          id: slice.key,
+          label: modelName(slice.key),
+          detail: provider.label,
+          value: measure(slice),
+          display: show(slice),
+          colour: colours[slice.key],
+          mark: provider.id,
+          hint: `${slice.key} - ${full(slice.total)} tokens over ${full(slice.events)} requests, ${money(slice.cost)} estimated`
+        };
+      })
+      .sort(biggestFirst)
   );
 
   const projectRows = $derived(
-    usage.byProject.map((slice) => ({
-      id: slice.key,
-      label: projectName(slice.key),
-      detail: '',
-      value: projectBy === 'sessions' ? slice.sessions : measure(slice),
-      display: projectBy === 'sessions' ? full(slice.sessions) : show(slice),
-      colour: 'var(--accent)',
-      hint: `${slice.key || 'unknown'} - ${full(slice.total)} tokens, ${full(slice.sessions)} sessions`
-    }))
+    usage.byProject
+      .map((slice) => ({
+        id: slice.key,
+        label: projectName(slice.key),
+        detail: '',
+        value: projectBy === 'sessions' ? slice.sessions : measure(slice),
+        display: projectBy === 'sessions' ? full(slice.sessions) : show(slice),
+        colour: 'var(--accent)',
+        hint: `${slice.key || 'unknown'} - ${full(slice.total)} tokens, ${full(slice.sessions)} sessions`
+      }))
+      .sort(biggestFirst)
   );
 
   /** Tools with nothing to show still get a row, so it is obvious what else is supported. */

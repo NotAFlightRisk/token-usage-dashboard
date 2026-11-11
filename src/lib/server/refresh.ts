@@ -3,20 +3,22 @@ import { refreshClaudeWindows } from './windows';
 import { settings } from './settings';
 import { usage } from './queries';
 import { resolveRange } from '../range';
-import { describe, report } from './problems';
+import { describe, report, resolve } from './problems';
 
 let timer: NodeJS.Timeout | null = null;
 
 export async function refresh(force = false): Promise<void> {
   await Promise.all([
-    scan().catch((error) =>
-      report({
-        id: 'scan',
-        level: 'error',
-        scope: 'Scan',
-        message: 'The scan stopped early',
-        hint: describe(error)
-      })
+    scan().then(
+      () => resolve('scan'),
+      (error) =>
+        report({
+          id: 'scan',
+          level: 'error',
+          scope: 'Scan',
+          message: 'The scan stopped early',
+          hint: describe(error)
+        })
     ),
     refreshClaudeWindows(force)
   ]);
@@ -29,10 +31,16 @@ function warm(): void {
   usage({ from, to, range, tools: [], models: [], projects: [] });
 }
 
-export function boot(): void {
-  if (timer) return;
+/** Starts the rescans, or swaps them onto whatever interval is saved now */
+export function schedule(): void {
+  if (timer) clearInterval(timer);
   const every = Math.max(15, settings().scanIntervalSec) * 1000;
   timer = setInterval(() => void refresh(), every);
   timer.unref?.();
+}
+
+export function boot(): void {
+  if (timer) return;
+  schedule();
   void refresh();
 }

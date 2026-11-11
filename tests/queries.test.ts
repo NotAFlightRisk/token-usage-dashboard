@@ -109,6 +109,16 @@ describe('usage', () => {
     expect(result.totals.sessions).toBe(5);
   });
 
+  it('counts a session that swapped model once on every panel', () => {
+    add('swap-a', 'claude-code', 'claude-opus-5', '/work/swap', 1, 10, 'swap');
+    add('swap-b', 'claude-code', 'claude-haiku-4-5', '/work/swap', 1, 10, 'swap');
+
+    const result = usage(filters({ projects: ['/work/swap'] }));
+    expect(result.byProject[0].sessions).toBe(1);
+    expect(result.byTool[0].sessions).toBe(1);
+    expect(result.totals.sessions).toBe(1);
+  });
+
   it('works out peak context, cache hits and the subagent share per session', () => {
     const at = new Date(now - DAY);
     const insert = handle.prepare(

@@ -53,7 +53,6 @@ export type Usage = {
   filters: Filters;
   totals: Slice;
   previous: Slice;
-  days: number;
   byTool: Slice[];
   byModel: Slice[];
   byProject: Slice[];

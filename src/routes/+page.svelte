@@ -499,7 +499,10 @@
   </div>
 
   <footer>
-    <span>Reads the transcripts already on this machine. Nothing is sent anywhere.</span>
+    <span>
+      Reads the transcripts already on this machine.
+      {saved.claudeWindows ? 'Only the plan windows check leaves it.' : 'Nothing is sent anywhere.'}
+    </span>
     <span>
       {#if usage.oldest}Records from {new Date(usage.oldest).toLocaleDateString('en-GB')} ·{/if}
       Scanned {relative(usage.scannedAt)}

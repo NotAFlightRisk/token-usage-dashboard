@@ -13,20 +13,20 @@
 ## About
 
 Ever wondered where all your tokens are going? Or how much your AI usage is valued at?
-This usage dashboard reads your local Claude Code, Codex, Open Code transcripts and builds a beautiful dashboard breaking down your full historical usage.
+This usage dashboard reads your local Claude Code, Codex and OpenCode transcripts and builds a beautiful dashboard breaking down your full historical usage.
 
-Everything happens locally, so your data never leaves your device.
+Everything happens locally, so your transcripts never leave your device.
 Stats are cached in a local SQLite DB, so that you get full history even after Claude and Codex have pruned old transcripts.
 Cost estimates come from current published API rates.
 
 The dashboard shows:
 
-- a calendar heatmap of every day since your records start
-- daily totals, stacked by tool, model and project
+- a calendar heatmap of the past year
+- daily totals, stacked by tool or model
 - the split between fresh input, output, cache reads and cache writes
-- which projects, AI providers and models the your tokens went to
+- which projects, AI providers and models your tokens went to
 - Anthropic and OpenAI 5-hour and 7-day windows
-- every session, with full token usage breakdown
+- your recent sessions, with full token usage breakdown
 
 ---
 
@@ -115,7 +115,7 @@ Follow [Development](#development) below, then `npm run build && npm start`.
 
 ## Development
 
-You'll need [Node](https://nodejs.org/) 22.12 or newer, plus [Git](https://git-scm.com/).
+You'll need [Node](https://nodejs.org/) 22.17 or newer, plus [Git](https://git-scm.com/).
 It's a [SvelteKit](https://svelte.dev/docs/kit) app and the build is self-contained so there's no runtime dependencies at all.
 
 ```bash

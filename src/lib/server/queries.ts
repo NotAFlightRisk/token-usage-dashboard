@@ -49,13 +49,11 @@ function where(filters: Filters, dated = true) {
 const SUMS =
   'sum(input) input, sum(output) output, sum(cache_read) cache_read,' +
   ' sum(cache_write) cache_write, sum(cache_write_long) cache_write_long,' +
-  ' sum(reasoning) reasoning, count(*) events,' +
-  " count(distinct tool || ':' || session) sessions";
+  ' sum(reasoning) reasoning, count(*) events';
 
 /** Rows arrive split by model so each slice can be priced at its own rate. */
 function fold(rows: Row[], overrides: Record<string, Rate>): Map<string, Slice> {
   const slices = new Map<string, Slice>();
-  const sessions = new Map<string, Set<string>>();
 
   for (const row of rows) {
     const key = String(row.key ?? '');
@@ -63,7 +61,6 @@ function fold(rows: Row[], overrides: Record<string, Rate>): Map<string, Slice> 
     if (!slice) {
       slice = { key, tokens: empty(), total: 0, reasoning: 0, cost: null, events: 0, sessions: 0 };
       slices.set(key, slice);
-      sessions.set(key, new Set());
     }
 
     const tokens = tokensOf(row);
@@ -72,7 +69,6 @@ function fold(rows: Row[], overrides: Record<string, Rate>): Map<string, Slice> 
     slice.total += totalOf(tokens);
     slice.reasoning += Number(row.reasoning) || 0;
     slice.events += Number(row.events) || 0;
-    slice.sessions += Number(row.sessions) || 0;
 
     slice.cost = plus(slice.cost, costOf(String(row.model ?? ''), tokens, overrides));
   }
@@ -96,22 +92,22 @@ function grouped(column: string, filters: Filters, overrides: Record<string, Rat
       `select ${column} key, model, ${SUMS} from events ${clause.sql} group by ${column}, model`
     )
     .all(...clause.params) as Row[];
-  return [...fold(rows, overrides).values()].sort((a, b) => b.total - a.total);
-}
+  const slices = fold(rows, overrides);
 
-function totals(filters: Filters, overrides: Record<string, Rate>): Slice {
-  const clause = where(filters);
-  const rows = db()
-    .prepare(`select '' key, model, ${SUMS} from events ${clause.sql} group by model`)
+  // counted apart from the per-model rows, or a session that swapped model counts twice
+  const counts = db()
+    .prepare(
+      `select ${column} key, count(distinct tool || ':' || session) sessions` +
+        ` from events ${clause.sql} group by ${column}`
+    )
     .all(...clause.params) as Row[];
-  const slice = fold(rows, overrides).get('') ?? blank('');
+  for (const row of counts) slices.get(String(row.key ?? ''))!.sessions = Number(row.sessions);
 
-  const distinct = db()
-    .prepare(`select count(distinct tool || ':' || session) sessions from events ${clause.sql}`)
-    .get(...clause.params) as Row;
-  slice.sessions = Number(distinct?.sessions) || 0;
-  return slice;
+  return [...slices.values()].sort((a, b) => b.total - a.total);
 }
+
+const totals = (filters: Filters, overrides: Record<string, Rate>): Slice =>
+  grouped("''", filters, overrides)[0] ?? blank('');
 
 function series(filters: Filters, column: string, overrides: Record<string, Rate>): DayPoint[] {
   const clause = where(filters);

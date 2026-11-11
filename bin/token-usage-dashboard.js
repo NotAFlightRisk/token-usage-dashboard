@@ -47,12 +47,13 @@ if (flag('-v', '--version')) {
 }
 
 const host = value('-h', '--host') ?? process.env.HOST ?? '127.0.0.1';
-const wanted = Number(value('-p', '--port') ?? process.env.PORT ?? 4747);
+const asked = value('-p', '--port') ?? process.env.PORT ?? '4747';
+const wanted = Number(asked);
 const dbPath = value('--db');
 if (dbPath) process.env.AIUSAGE_DB = dbPath;
 
 if (!Number.isInteger(wanted) || wanted < 1 || wanted > 65535) {
-  console.error(`${value('-p', '--port')} is not a port. Pick a number between 1 and 65535.`);
+  console.error(`${asked} is not a port. Pick a number between 1 and 65535.`);
   process.exit(1);
 }
 

@@ -89,7 +89,7 @@ async function scanSource(source: Source): Promise<SourceStat> {
     let size = 0;
     let mtime = 0;
     try {
-      const info = await lstatOf(path);
+      const info = await statOf(path);
       size = info.size;
       mtime = info.mtime;
     } catch {
@@ -184,7 +184,7 @@ const pad = (value: number) => String(value).padStart(2, '0');
 export const localDay = (at: Date) =>
   `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`;
 
-async function lstatOf(path: string) {
+async function statOf(path: string) {
   const info = await stat(path);
   return { size: info.size, mtime: Math.round(info.mtimeMs) };
 }

@@ -61,25 +61,13 @@ export type Tool = {
   id: string;
   label: string;
   colour: string;
-  home: string;
 };
 
 export const TOOLS: Tool[] = [
-  {
-    id: 'claude-code',
-    label: 'Claude Code',
-    colour: '#d97757',
-    home: 'https://claude.com/claude-code'
-  },
-  { id: 'codex', label: 'Codex', colour: '#10a37f', home: 'https://developers.openai.com/codex' },
-  { id: 'opencode', label: 'OpenCode', colour: '#f5a524', home: 'https://opencode.ai' },
-  {
-    id: 'gemini-cli',
-    label: 'Gemini CLI',
-    colour: '#4285f4',
-    home: 'https://github.com/google-gemini/gemini-cli'
-  }
+  { id: 'claude-code', label: 'Claude Code', colour: '#d97757' },
+  { id: 'codex', label: 'Codex', colour: '#10a37f' },
+  { id: 'opencode', label: 'OpenCode', colour: '#f5a524' }
 ];
 
 export const toolMeta = (id: string) =>
-  TOOLS.find((tool) => tool.id === id) ?? { id, label: id, colour: '#8b93a7', home: '' };
+  TOOLS.find((tool) => tool.id === id) ?? { id, label: id, colour: '#8b93a7' };

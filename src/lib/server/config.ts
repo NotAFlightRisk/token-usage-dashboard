@@ -15,8 +15,5 @@ export const config = {
   dbPath: env('AIUSAGE_DB', join(dataDir, 'usage.db')),
   claudeDir: env('AIUSAGE_CLAUDE_DIR', join(home, '.claude')),
   codexDir: env('AIUSAGE_CODEX_DIR', join(home, '.codex')),
-  openCodeDir: env('AIUSAGE_OPENCODE_DIR', join(dataHome, 'opencode')),
-  geminiDir: env('AIUSAGE_GEMINI_DIR', join(home, '.gemini')),
-  openRouterKey: env('OPENROUTER_API_KEY', ''),
-  scanIntervalMs: Number(env('AIUSAGE_SCAN_INTERVAL', '120')) * 1000
+  openCodeDir: env('AIUSAGE_OPENCODE_DIR', join(dataHome, 'opencode'))
 };

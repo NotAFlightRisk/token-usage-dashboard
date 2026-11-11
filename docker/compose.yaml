@@ -2,7 +2,7 @@ services:
   token-usage-dashboard:
     image: notaflightrisk/token-usage-dashboard:latest
     ports:
-      - '8080:8080'
+      - '127.0.0.1:8080:8080'
     volumes:
       - ${HOME}/.claude:/home/node/.claude:ro
       - ${HOME}/.codex:/home/node/.codex:ro

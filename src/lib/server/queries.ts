@@ -285,7 +285,6 @@ function rollup(filters: Filters): Usage {
     filters,
     totals: totals(filters, overrides),
     previous: totals(previous, overrides),
-    days: Math.max(1, Math.round(span / 86_400_000)),
     byTool: grouped('tool', filters, overrides),
     byModel,
     byProject: grouped('project', filters, overrides),

@@ -148,8 +148,10 @@
       </ul>
       <p class="note">
         Point these somewhere else with
-        {#each sources as source, index (source.id)}<code>{ENV[source.id] ?? source.id}</code
-          >{index < sources.length - 1 ? ', ' : ''}{/each}. History lives in <code>{dbPath}</code>
+        {#each sources as source, index (source.id)}<code>
+            {ENV[source.id] ?? source.id}
+          </code>{index < sources.length - 1 ? ', ' : ''}{/each}. History lives in
+        <code>{dbPath}</code>
         and outlives the transcripts, which most tools prune.
       </p>
       <label class="field">

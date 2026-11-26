@@ -50,8 +50,10 @@
       fill="currentColor"
       font-size={initials.length > 1 ? 9 : 12}
       font-weight="600"
-      font-family="var(--sans)">{initials}</text
+      font-family="var(--sans)"
     >
+      {initials}
+    </text>
   {/if}
 </svg>
 

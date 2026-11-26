@@ -165,8 +165,10 @@
                     type="button"
                     class="link"
                     use:tooltip={row.project || 'unknown'}
-                    onclick={() => onpick?.(row.project)}>{projectName(row.project)}</button
+                    onclick={() => onpick?.(row.project)}
                   >
+                    {projectName(row.project)}
+                  </button>
                 </td>
               {:else if column.id === 'ran'}
                 <td

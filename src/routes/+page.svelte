@@ -297,8 +297,10 @@
           tools = [];
           models = [];
           projects = [];
-        }}>Clear filters</button
+        }}
       >
+        Clear filters
+      </button>
     {/if}
   </div>
 
